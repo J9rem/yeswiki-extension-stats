@@ -80,12 +80,14 @@ class StatsManager
             if (!isset($_SESSION['stats'])) {
                 $_SESSION['stats'] = [];
             }
-            if (!isset($_SESSION['stats'][$year])) {
-                $_SESSION['stats'][$year] = [];
-            }
-            if (!isset($_SESSION['stats'][$year][$month])) {
-                $_SESSION['stats'][$year][$month] = [];
-            }
+            // init $year or clean others (no keep data in sessions)
+            $_SESSION['stats'] = [
+                $year => $_SESSION['stats'][$year] ?? []
+            ];
+            // init $month or clean others (no keep data in sessions)
+            $_SESSION['stats'][$year]  = [
+                $month => $_SESSION['stats'][$year][$month] ?? []
+            ];
             if (!in_array($tag, $_SESSION['stats'][$year][$month])) {
                 $_SESSION['stats'][$year][$month][] = $tag;
                 $stats[$year][$month][self::KEY_FOR_VISITORS] += 1;
