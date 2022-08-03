@@ -13,4 +13,10 @@ return [
     // EditconigAction
     'EDIT_CONFIG_HINT_STATS_ACTIVATED' => 'Activer les stats (true ou false)',
     'EDIT_CONFIG_GROUP_STATS' => 'Statistiques',
+
+    // Actions builder
+    'AB_STATS_LABEL' => 'Statistiques du site',
+
+    // templates/stats.twig
+    'STATS_TITLE' => 'Statistiques du site',
 ];
