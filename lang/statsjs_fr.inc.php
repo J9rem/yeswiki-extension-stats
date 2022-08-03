@@ -11,11 +11,14 @@
 return [
 
     // javascripts/stats.js
+    'STATS_ENTRY' => 'Fiche {formId}',
     'STATS_LOADED' => 'Statistiques chargées',
     'STATS_LOADING' => 'Chargement des statistiques',
     'STATS_LOADING_ERROR' => 'Erreur de chargement des statistiques',
     'STATS_MONTH_VISITS' => 'Visites ({month}/{year})',
     'STATS_MONTH_VISITORS' => 'Visiteurs ({month}/{year})',
+    'STATS_PAGE' => 'Page',
+    'STATS_TYPE' => 'Type',
     'STATS_TAG' => 'Tag',
     'STATS_VISITS' => 'Visites',
     'STATS_VISITORS' => 'Visiteurs',

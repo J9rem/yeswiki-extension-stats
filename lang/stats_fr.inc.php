@@ -18,5 +18,6 @@ return [
     'AB_STATS_LABEL' => 'Statistiques du site',
 
     // templates/stats.twig
+    'STATS_SELECT_TYPES' => 'Filtrer un type',
     'STATS_TITLE' => 'Statistiques du site',
 ];

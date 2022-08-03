@@ -15,16 +15,71 @@ let appParams = {
     components: { SpinnerLoader},
     data: function() {
         return {
+            currentType :"",
             dataTable: null,
             dOMContentLoaded: false,
+            entries: {},
+            entriesUpdated: false,
             loading: false,
             message: "",
             messageClass: {alert:true,'alert-info':true},
+            pages: [],
+            pagesUpdated: false,
             ready: false,
             stats:{}, 
+            types: {}
         };
     },
     methods: {
+        loadEntries: function (){
+            let app = this;
+            if (app.loading){
+                return ;
+            }
+            $.ajax({
+                method: "GET",
+                url: wiki.url(`api/entries`),
+                data: {
+                    fields: 'id_fiche,id_typeannonce',
+                },
+                success: function(data){
+                    app.entries = {};
+                    app.dataToArray(data).forEach((entry)=>{
+                        app.entries[entry.id_fiche] = {
+                            formId:entry.id_typeannonce
+                        };
+                    });
+                    app.entriesUpdated = true;
+                    app.updateTypes();
+                },
+                error: function(xhr,status,error){
+                    app.message = _t('STATS_LOADING_ERROR');
+                    app.messageClass = {alert:true,['alert-danger']:true};
+                },
+            });
+        },
+        loadPages: function (){
+            let app = this;
+            if (app.loading){
+                return ;
+            }
+            $.ajax({
+                method: "GET",
+                url: wiki.url(`api/pages`),
+                success: function(data){
+                    app.pages = [];
+                    app.dataToArray(data).forEach((page)=>{
+                        app.pages.push(page.tag);
+                    });
+                    app.pagesUpdated = true;
+                    app.updateTypes();
+                },
+                error: function(xhr,status,error){
+                    app.message = _t('STATS_LOADING_ERROR');
+                    app.messageClass = {alert:true,['alert-danger']:true};
+                },
+            });
+        },
         loadStats: function(){
             let app = this;
             if (app.loading){
@@ -40,13 +95,7 @@ let appParams = {
                     property: 'https://yeswiki.net/vocabulary/stats',
                 },
                 success: function(data){
-                    let dataAsArray = {};
-                    if (Array.isArray(data)){
-                        dataAsArray = data;
-                    } else if (typeof data == "object"){
-                        data.forEach((stat) => dataAsArray.push(stat));
-                    }
-                    app.stats = dataAsArray;
+                    app.stats = app.dataToArray(data);
                     app.message = _t('STATS_LOADED');
                     app.messageClass = {alert:true,['alert-success']:true};
                     app.loading = false;
@@ -67,6 +116,15 @@ let appParams = {
                     app.ready = true;
                 }
             });
+        },
+        dataToArray: function (data){
+            let dataAsArray = [];
+            if (Array.isArray(data)){
+                dataAsArray = data;
+            } else if (typeof data == "object"){
+                Object.keys(data).forEach((key) => dataAsArray.push(data[key]));
+            }
+            return dataAsArray;
         },
         pushDataToTable: function(){
             let app = this;
@@ -96,14 +154,28 @@ let appParams = {
                         {data:"currentMonthVisitors",title:_t('STATS_MONTH_VISITORS',{year:currentYear%100,month:((currentMonth<10)?"0":"")+currentMonth})},
                         {data:"previousMonthVisits",title:_t('STATS_MONTH_VISITS',{year:(((currentMonth==1)?-1:0)+currentYear)%100,month:(currentMonth==1)?12:(((currentMonth<11)?"0":"")+(currentMonth-1))})},
                         {data:"previousMonthVisitors",title:_t('STATS_MONTH_VISITORS',{year:(((currentMonth==1)?-1:0)+currentYear)%100,month:(currentMonth==1)?12:(((currentMonth<11)?"0":"")+(currentMonth-1))})},
+                        {
+                            data:"type",
+                            title:_t('STATS_TYPE'),
+                            render: function ( data, type, row, meta ) {
+                                if (data.match(/^entry .*/)){
+                                    return _t('STATS_ENTRY',{formId:data.slice("entry ".length)})
+                                } else if (data=="page"){
+                                    return _t('STATS_PAGE');
+                                }
+                                return "";
+                            }
+                        },
                     ]
                 },
                 order:[
                     [1,'desc'],
                     [2,'desc'],
                     [0,'desc'],
-                ]
+                ],
             });
+            this.loadEntries();
+            this.loadPages();
         },
         getFormattedData: function(){
             let app = this;
@@ -137,6 +209,7 @@ let appParams = {
                     currentMonthVisitors:stat.currentMonth.visitors,
                     previousMonthVisits:stat.previousMonth.visits,
                     previousMonthVisitors:stat.previousMonth.visitors,
+                    type:""
                 });
             });
 
@@ -192,6 +265,37 @@ let appParams = {
                 stat.previousMonth[keys[key]] = previousMonthVisits[key];
             });
             return stat;
+        },
+        updateTypes: function(){
+            let app = this;
+            if (!app.entriesUpdated || !app.pagesUpdated){
+                return ;
+            }
+            Object.keys(app.stats).forEach((key)=>{
+                let tag = app.stats[key].resource
+                if (app.entries.hasOwnProperty(tag)){
+                    app.stats[key].type = `entry ${app.entries[tag].formId}`;
+                    if (!app.types.hasOwnProperty(app.stats[key].type)){
+                        app.types[app.stats[key].type] = _t('STATS_ENTRY',{formId:app.entries[tag].formId});
+                    }
+                } else if (app.pages.includes(tag)){
+                    app.stats[key].type = "page";
+                    if (!app.types.hasOwnProperty('page')){
+                        app.types.page = _t('STATS_PAGE');
+                    }
+                }
+            });
+            
+            app.dataTable.rows().eq(0).each(function( rowIdx ){
+                    let tag = app.dataTable.cell(rowIdx,0).data();
+                    let statKey = Object.keys(app.stats).filter((key)=>app.stats[key].resource == tag)
+                    if (statKey.length == 1){
+                        let selectKey = statKey.shift()
+                        let type = app.stats[selectKey].type;
+                        app.dataTable.cell(rowIdx,9).data(type);
+                    }
+                }
+            )
         }
     },
     mounted(){
