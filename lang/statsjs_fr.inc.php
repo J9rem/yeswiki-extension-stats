@@ -18,6 +18,7 @@ return [
     'STATS_MONTH_VISITS' => 'Visites ({month}/{year})',
     'STATS_MONTH_VISITORS' => 'Visiteurs ({month}/{year})',
     'STATS_PAGE' => 'Page',
+    'STATS_LIST' => 'Liste',
     'STATS_TYPE' => 'Type',
     'STATS_TAG' => 'Tag',
     'STATS_VISITS' => 'Visites',

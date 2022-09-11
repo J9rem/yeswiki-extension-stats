@@ -25,9 +25,11 @@ let appParams = {
             messageClass: {alert:true,'alert-info':true},
             pages: [],
             pagesUpdated: false,
+            statsToDelete: [],
             ready: false,
             stats:{}, 
-            types: {}
+            types: {},
+            typesEmpty: true,
         };
     },
     methods: {
@@ -122,7 +124,11 @@ let appParams = {
             if (Array.isArray(data)){
                 dataAsArray = data;
             } else if (typeof data == "object"){
-                Object.keys(data).forEach((key) => dataAsArray.push(data[key]));
+                Object.keys(data).forEach((key) => {
+                    if (key != 'rawOutput'){
+                        dataAsArray.push(data[key]);
+                    }
+                });
             }
             return dataAsArray;
         },
@@ -184,8 +190,15 @@ let appParams = {
                 return data;
             }
             app.stats.forEach((stat)=>{
+                let values;
+                try {
+                    values = JSON.parse(stat.value);
+                } catch (error) {
+                    console.log({errorWhenParsingStat:stat,error});
+                    values = {};
+                }
                 data[stat.resource] = {
-                    values:JSON.parse(stat.value)
+                    values:values
                 };
                 data[stat.resource] = app.appendTotalVisits(data[stat.resource]);
             });
@@ -276,13 +289,27 @@ let appParams = {
                 if (app.entries.hasOwnProperty(tag)){
                     app.stats[key].type = `entry ${app.entries[tag].formId}`;
                     if (!app.types.hasOwnProperty(app.stats[key].type)){
+                        app.typesEmpty = true;
                         app.types[app.stats[key].type] = _t('STATS_ENTRY',{formId:app.entries[tag].formId});
+                        app.typesEmpty = false;
                     }
                 } else if (app.pages.includes(tag)){
                     app.stats[key].type = "page";
                     if (!app.types.hasOwnProperty('page')){
+                        app.typesEmpty = true;
                         app.types.page = _t('STATS_PAGE');
+                        app.typesEmpty = false;
                     }
+                } else if (tag.slice(0,5) == "Liste"){
+                    // app.stats[key].type = "list";
+                    // app.pages.push(tag);
+                    // if (!app.types.hasOwnProperty('list')){
+                    //     app.typesEmpty = true;
+                    //     app.types.list = _t('STATS_LIST');
+                    //     app.typesEmpty = false;
+                    // }
+                } else if (!app.statsToDelete.includes(tag)){
+                    app.statsToDelete.push(tag);
                 }
             });
             
@@ -296,6 +323,116 @@ let appParams = {
                     }
                 }
             )
+
+            app.deleteStats();
+        },
+        deleteStats: function(){
+            if (this.statsToDelete.length > 0){
+                let currentStatsToDelete = [...this.statsToDelete];
+                let tagsToDelete = [];
+                this.getOneStatToDelete(currentStatsToDelete,tagsToDelete);
+            }
+        },
+        getOneStatToDelete: function(currentStatsToDelete,tagsToDelete){
+            if (currentStatsToDelete.length == 0){
+                return this.deleteStatsNext(tagsToDelete);
+            }
+            let app = this;
+            let currentTag = currentStatsToDelete.shift();
+            $.ajax({
+                method: "GET",
+                url: wiki.url(`api/triples/${currentTag}`),
+                data: {
+                    property: 'https://yeswiki.net/vocabulary/stats',
+                },
+                success: function(data){
+                    let dataAsArray = app.dataToArray(data);
+                    if (dataAsArray.length > 0){
+                        app.getOneTagToDelete(currentTag,currentStatsToDelete,tagsToDelete);
+                    } else {
+                        console.log({nostatFor:currentTag,dataAsArray})
+                        app.getOneStatToDelete(currentStatsToDelete,tagsToDelete);
+                    }
+                },
+                error: function(xhr,status,error){
+                    console.log({errorGetStatFor:currentTag,error})
+                    app.getOneStatToDelete(currentStatsToDelete,tagsToDelete);
+                }
+            });
+        },
+        getOneTagToDelete: function(tag,currentStatsToDelete,tagsToDelete){
+            let app = this;
+            $.ajax({
+                method: "GET",
+                url: wiki.url(`api/pages/${tag}`),
+                success: function(data){
+                    if (typeof data === "object" && Object.keys(data).length > 0){
+                        if (data.hasOwnProperty('id') && data.tag == tag){
+                            // existing page
+                            console.log({existingPage:tag,data});
+                        } else {
+                            // error
+                            console.log({weirdTagForPage:tag,data})
+                        }
+                        app.getOneStatToDelete(currentStatsToDelete,tagsToDelete);
+                    } else {
+                        // pages not existing
+                        if (!tagsToDelete.includes(tag)){
+                            tagsToDelete.push(tag);
+                        }
+                        app.getOneStatToDelete(currentStatsToDelete,tagsToDelete);
+                    }
+                },
+                error: function(xhr,status,error){
+                    // pages not existing
+                    if (!tagsToDelete.includes(tag)){
+                        tagsToDelete.push(tag);
+                    }
+                    app.getOneStatToDelete(currentStatsToDelete,tagsToDelete);
+                }
+            });
+        },
+        deleteStatsNext: function (tagsToDelete){
+            // console.log({deleting:tagsToDelete});
+            this.deleteAStat(tagsToDelete);
+        },
+        deleteAStat: function (next){
+            if (next.length == 0){
+                // location.reload();
+                return;
+            }
+            let tag = next.shift();
+            if (tag.length == 0){
+                this.deleteAStat(next);
+                return false;
+            }
+            let app = this;
+            $.ajax({
+                method: "POST",
+                url: wiki.url(`api/triples/${tag}/delete`),
+                data: {
+                    property: 'https://yeswiki.net/vocabulary/stats',
+                    filters: {
+                        0: "",
+                    }
+                },
+                success: function(data){
+                    console.log({deleted:tag,next});
+                },
+                complete: function(){
+                  app.deleteAStat(next);
+                }
+            });
+        },
+        removeLines: function (selectedTags){
+            let idxToRemove = [];
+            this.dataTable.rows().eq(0).each(( rowIdx )=>{
+                let tag = this.dataTable.cell(rowIdx,0).data();
+                if (selectedTags.includes(tag)){
+                    idxToRemove.push(rowIdx);
+                }
+            });
+            idxToRemove.forEach((rowIdx)=>{this.dataTable.row(rowIdx).remove().draw()});
         }
     },
     mounted(){
@@ -306,6 +443,11 @@ let appParams = {
             this.dOMContentLoaded = true;
         });
         this.loadStats();
+    },
+    watch: {
+        currentType: function(newVal){
+            this.dataTable.column(9).search(newVal).draw();
+        }
     }
 };
 
