@@ -19,7 +19,7 @@
         </div>
         <select class="form-control" v-if="ready" ref="chooseType" v-model="currentType" name="chooseType">
             <option value=""></option>
-            <option v-for="(type,label) in types" :value="type" v-html="label"></option>
+            <option v-for="(label,type) in formTypes" :value="type" v-html="label"></option>
         </select>
     </div>
     <table ref="dataTable" class="table-striped"></table>

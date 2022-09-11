@@ -28,6 +28,7 @@ let appParams = {
             statsToDelete: [],
             ready: false,
             stats:{}, 
+            formTypes: {},
             types: {},
             typesEmpty: true,
         };
@@ -291,6 +292,7 @@ let appParams = {
                     if (!app.types.hasOwnProperty(app.stats[key].type)){
                         app.typesEmpty = true;
                         app.types[app.stats[key].type] = _t('STATS_ENTRY',{formId:app.entries[tag].formId});
+                        app.formTypes[app.types[app.stats[key].type]] = app.types[app.stats[key].type];
                         app.typesEmpty = false;
                     }
                 } else if (app.pages.includes(tag)){
@@ -298,6 +300,7 @@ let appParams = {
                     if (!app.types.hasOwnProperty('page')){
                         app.typesEmpty = true;
                         app.types.page = _t('STATS_PAGE');
+                        app.formTypes[_t('STATS_PAGE')] = _t('STATS_PAGE');
                         app.typesEmpty = false;
                     }
                 } else if (tag.slice(0,5) == "Liste"){
@@ -306,6 +309,7 @@ let appParams = {
                     // if (!app.types.hasOwnProperty('list')){
                     //     app.typesEmpty = true;
                     //     app.types.list = _t('STATS_LIST');
+                    //     app.formTypes[_t('STATS_LIST')] = _t('STATS_LIST');
                     //     app.typesEmpty = false;
                     // }
                 } else if (!app.statsToDelete.includes(tag)){
@@ -324,7 +328,32 @@ let appParams = {
                 }
             )
 
+            app.updateTypesLabels();
             app.deleteStats();
+        },
+        updateTypesLabels: function(){
+            for (const key in this.types) {
+                if (key.slice(0,5) == "entry"){
+                    let formId = key.slice(6);
+                    this.updateTypeLabel(key,formId);
+                }
+            }
+        },
+        updateTypeLabel: function(key,formId){
+            $.ajax({
+                method: "GET",
+                url: wiki.url(`api/forms/${formId}`),
+                success: (data)=>{
+                    if (typeof data == "object" && 
+                    data.hasOwnProperty("bn_label_nature") && 
+                    data.hasOwnProperty("bn_id_nature") && 
+                    data["bn_id_nature"] == formId){
+                        this.typesEmpty = true;
+                        this.formTypes[this.types[key]] = _t('STATS_FORM',{formName:data["bn_label_nature"],formId:data["bn_id_nature"]});
+                        this.typesEmpty = false;
+                    }
+                }
+            });
         },
         deleteStats: function(){
             if (this.statsToDelete.length > 0){
