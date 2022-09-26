@@ -13,6 +13,7 @@ namespace YesWiki\Stats;
 
 use YesWiki\Core\YesWikiHandler;
 use YesWiki\Core\Service\AclService;
+use YesWiki\Core\Service\PageManager;
 use YesWiki\Stats\Service\StatsManager;
 
 class ShowHandler__ extends YesWikiHandler
@@ -22,8 +23,9 @@ class ShowHandler__ extends YesWikiHandler
         // get Services
         $aclService = $this->getService(AclService::class);
         $statsManager = $this->getService(StatsManager::class);
+        $pageManager = $this->getService(PageManager::class);
         $tag = $this->wiki->getPageTag();
-        if ($aclService->hasAccess('read', $tag)) {
+        if ($aclService->hasAccess('read', $tag) && !empty($pageManager->getOne($tag))) {
             $statsManager->registerStatsNotAdmin($tag);
         }
     }

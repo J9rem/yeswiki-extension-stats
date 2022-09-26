@@ -16,6 +16,10 @@ Extension [YesWiki](https://yeswiki.net/) to have stats on pages or entries (nee
 
 In page `GererMisesAJour` on your YesWiki website, search extension `stats` and install it.
 
+### Usage
+
+Usage help is described in `http://example.com/?doc/#tools/stats/en/README.md` (replacing `http://example.com/?` by the `baseUrl` of your wiki). The same file can be found also here : https://github.com/J9rem/yeswiki-extension-stats/blob/master/docs/en/README.md
+
 ### Warranty
 
 Like written in the licence file, there is no warranty on usage of this software. Refer to licence file for details.
@@ -32,7 +36,11 @@ Extension [YesWiki](https://yeswiki.net/) pour avoir des statistiques sur la con
 
 ### Installation
 
-Dans la page `GererMisesAJour` de votre YesWiki, recherchez l'extension `stats` et installez-là.
+Dans la page `GererMisesAJour` de votre YesWiki, recherchez l'extension `stats` et installez-la.
+
+### Utilisation
+
+L'aide sur l'utilisation peut être trouvée sur `http://example.com/?doc/#tools/stats/fr/README.md` (en remplaçant `http://example.com/?` par `baseUrl` de votre wiki). Le même fichier peut aussi être trouvé ici : https://github.com/J9rem/yeswiki-extension-stats/blob/master/docs/fr/README.md
 
 ### Garantie
 

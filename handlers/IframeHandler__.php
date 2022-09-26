@@ -13,6 +13,7 @@ namespace YesWiki\Stats;
 
 use YesWiki\Core\YesWikiHandler;
 use YesWiki\Core\Service\AclService;
+use YesWiki\Core\Service\PageManager;
 use YesWiki\Stats\Service\StatsManager;
 
 class IframeHandler__ extends YesWikiHandler
@@ -21,9 +22,10 @@ class IframeHandler__ extends YesWikiHandler
     {
         // get Services
         $aclService = $this->getService(AclService::class);
+        $pageManager = $this->getService(PageManager::class);
         $statsManager = $this->getService(StatsManager::class);
         $tag = $this->wiki->getPageTag();
-        if ($aclService->hasAccess('read', $tag)) {
+        if ($aclService->hasAccess('read', $tag) && !empty($pageManager->getOne($tag))) {
             $statsManager->registerStatsNotAdmin($tag);
         }
     }
